@@ -1,0 +1,30 @@
+# Binaries and build artifacts
+bin/
+build/
+*.o
+*.a
+*.so
+*.dylib
+*.dSYM/
+*_sats.c
+*_dats.c
+*_hats.c
+*.tmp
+*.log
+
+# Simulation files
+*.flash
+*.journal
+*.sock
+
+# Test and benchmark outputs
+test_run.flash
+crash_test.flash
+bench_run.flash
+__pycache__/
+*.pyc
+
+# IDE and OS
+.DS_Store
+.vscode/
+.idea/

@@ -35,6 +35,7 @@ int talweg_media_read_page(talweg_flash_dev_t *dev, uint32_t ppn, void *buf, tal
 int talweg_media_prog_page(talweg_flash_dev_t *dev, uint32_t ppn, const void *buf, const talweg_oob_t *oob);
 int talweg_media_erase_block(talweg_flash_dev_t *dev, uint32_t blk);
 int talweg_media_sync(talweg_flash_dev_t *dev);
+int talweg_media_inject_bitflip(talweg_flash_dev_t *dev, uint32_t ppn, uint32_t byte_offset, uint8_t bit_mask);
 
 #ifdef __cplusplus
 }

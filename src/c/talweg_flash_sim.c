@@ -197,3 +197,13 @@ int talweg_media_sync(talweg_flash_dev_t *dev) {
     void *base = dev->raw_media - sizeof(talweg_media_hdr_t);
     return msync(base, dev->raw_size, MS_SYNC) == 0 ? TALWEG_OK : TALWEG_ERR_MEDIA_IO;
 }
+
+int talweg_media_inject_bitflip(talweg_flash_dev_t *dev, uint32_t ppn, uint32_t byte_offset, uint8_t bit_mask) {
+    if (!dev || ppn >= dev->geom.total_pages) return TALWEG_ERR_OUT_OF_BOUNDS;
+    if (byte_offset >= dev->geom.page_size) return TALWEG_ERR_INVAL;
+
+    size_t offset = (size_t)ppn * dev->page_total_bytes + byte_offset;
+    dev->raw_media[offset] ^= bit_mask;
+    dev->stats.bitflips_injected++;
+    return TALWEG_OK;
+}

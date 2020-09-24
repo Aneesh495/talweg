@@ -47,6 +47,9 @@ typedef struct {
 extern int talweg_media_read_page(talweg_flash_dev_t *dev, uint32_t ppn, void *buf, talweg_oob_t *oob);
 extern int talweg_media_prog_page(talweg_flash_dev_t *dev, uint32_t ppn, const void *buf, const talweg_oob_t *oob);
 extern int talweg_media_erase_block(talweg_flash_dev_t *dev, uint32_t blk);
+
+void talweg_c_ftl_destroy(void *p);
+int talweg_c_ftl_step_gc(void *p);
 %}
 
 extern fun talweg_c_ftl_create (total: uint, ppb: uint, ps: uint, max_lba: uint, policy: int): ptr = "mac#talweg_c_ftl_create"

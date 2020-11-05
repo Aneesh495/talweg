@@ -19,28 +19,29 @@ SRC_ATS_DATS = $(wildcard src/ats/DATS/*.dats)
 SRC_C = $(wildcard src/c/*.c)
 SRC_CLI = $(wildcard src/cli/*.c)
 
+OBJ_ATS_C = $(patsubst src/ats/DATS/%.dats, $(BUILD_DIR)/%_dats.c, $(SRC_ATS_DATS))
+OBJ_ATS = $(patsubst src/ats/DATS/%.dats, $(BUILD_DIR)/%_dats.o, $(SRC_ATS_DATS))
 OBJ_C = $(patsubst src/c/%.c, $(BUILD_DIR)/%.o, $(SRC_C))
 OBJ_CLI = $(patsubst src/cli/%.c, $(BUILD_DIR)/%.o, $(SRC_CLI))
 
 TARGET_LIB = $(BUILD_DIR)/libtalweg.a
 TARGET_CLI = $(BIN_DIR)/talweg
-TARGET_SERVER = $(BIN_DIR)/talwegd
 
 TEST_SRCS = $(wildcard tests/*.c)
 TEST_BINS = $(patsubst tests/%.c, $(BIN_DIR)/%, $(TEST_SRCS))
 
 .PHONY: all clean test check-em-dash dirs
 
-all: dirs $(TARGET_LIB) $(TARGET_CLI) $(TARGET_SERVER)
+all: dirs $(TARGET_LIB) $(TARGET_CLI)
 
 dirs:
 	@mkdir -p $(BIN_DIR) $(BUILD_DIR)
 
-# Generate C from ATS static and dynamic files
-$(BUILD_DIR)/talweg_ats.c: src/ats/DATS/talweg_core.dats $(SRC_ATS_SATS) $(SRC_ATS_DATS) | dirs
+# Generate C from ATS dynamic files
+$(BUILD_DIR)/%_dats.c: src/ats/DATS/%.dats $(SRC_ATS_SATS) | dirs
 	PATSHOME=$(PATSHOME) $(PATSOPT) $(PATSFLAGS) -o $@ -d $<
 
-$(BUILD_DIR)/talweg_ats.o: $(BUILD_DIR)/talweg_ats.c | dirs
+$(BUILD_DIR)/%_dats.o: $(BUILD_DIR)/%_dats.c | dirs
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%.o: src/c/%.c | dirs
@@ -49,14 +50,11 @@ $(BUILD_DIR)/%.o: src/c/%.c | dirs
 $(BUILD_DIR)/%.o: src/cli/%.c | dirs
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(TARGET_LIB): $(OBJ_C) $(BUILD_DIR)/talweg_ats.o
+$(TARGET_LIB): $(OBJ_C) $(OBJ_ATS)
 	ar rcs $@ $^
 
 $(TARGET_CLI): $(OBJ_CLI) $(TARGET_LIB) | dirs
-	$(CC) $(CFLAGS) $^ -o $@ -lpthread
-
-$(TARGET_SERVER): $(BUILD_DIR)/talweg_server.o $(TARGET_LIB) | dirs
-	$(CC) $(CFLAGS) $^ -o $@ -lpthread
+	$(CC) $(CFLAGS) $(OBJ_CLI) $(TARGET_LIB) -o $@ -lpthread
 
 test: dirs $(TARGET_LIB) $(TEST_BINS)
 	@echo "=== Running C Unit Tests ==="

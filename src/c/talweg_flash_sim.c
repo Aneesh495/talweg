@@ -64,24 +64,16 @@ int talweg_media_create(const char *path, const talweg_geometry_t *geom) {
 }
 
 int talweg_media_open(talweg_flash_dev_t **out_dev, const char *path, const talweg_geometry_t *geom) {
-    if (!out_dev || !path || !geom) return TALWEG_ERR_INVAL;
+    (void)geom;
+    if (!out_dev || !path) return TALWEG_ERR_INVAL;
 
     int fd = open(path, O_RDWR);
     if (fd < 0) return TALWEG_ERR_MEDIA_IO;
 
     struct stat st;
-    if (fstat(fd, &st) < 0) {
+    if (fstat(fd, &st) < 0 || st.st_size < (off_t)sizeof(talweg_media_hdr_t)) {
         close(fd);
         return TALWEG_ERR_MEDIA_IO;
-    }
-
-    size_t page_total = geom->page_size + geom->oob_size;
-    size_t block_bytes = geom->pages_per_block * page_total;
-    size_t expected_size = sizeof(talweg_media_hdr_t) + (geom->total_blocks * block_bytes);
-
-    if ((size_t)st.st_size < expected_size) {
-        close(fd);
-        return TALWEG_ERR_CORRUPT_METADATA;
     }
 
     void *map = mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -104,12 +96,12 @@ int talweg_media_open(talweg_flash_dev_t **out_dev, const char *path, const talw
         return TALWEG_ERR_NOMEM;
     }
 
-    dev->geom = *geom;
+    dev->geom = hdr->geom;
     dev->fd = fd;
     dev->raw_media = (uint8_t *)map + sizeof(talweg_media_hdr_t);
     dev->raw_size = st.st_size;
-    dev->block_bytes = block_bytes;
-    dev->page_total_bytes = page_total;
+    dev->page_total_bytes = dev->geom.page_size + dev->geom.oob_size;
+    dev->block_bytes = dev->geom.pages_per_block * dev->page_total_bytes;
     dev->enforce_sequential_prog = true;
     dev->simulate_latencies = false;
 

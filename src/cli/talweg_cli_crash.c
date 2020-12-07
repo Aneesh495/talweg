@@ -1,6 +1,7 @@
 #include "talweg_ftl.h"
 #include "talweg_flash.h"
 #include "talweg_journal.h"
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

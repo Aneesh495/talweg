@@ -187,18 +187,21 @@ int talweg_c_ftl_read(void *p, uint32_t lba, void *out_buf) {
     talweg_ats_ftl_ctx_t *ftl = (talweg_ats_ftl_ctx_t *)p;
     if (!ftl || !out_buf || lba >= ftl->max_lba) return TALWEG_ERR_OUT_OF_BOUNDS;
 
-    /* Check cache first */
-    void *cached = NULL;
-    if (talweg_c_cache_pin(ftl->cache, lba, &cached) == TALWEG_OK) {
-        memcpy(out_buf, cached, ftl->page_size);
-        talweg_c_cache_unpin(ftl->cache, lba, false);
-        return TALWEG_OK;
-    }
-
+    /* Check L2P table first: unmapped LBAs return zero fill */
     uint32_t ppn = talweg_c_lba_map_lookup(ftl->map_tbl, lba);
     if (ppn == TALWEG_UNMAPPED_PPN) {
         memset(out_buf, 0, ftl->page_size);
         return TALWEG_OK;
+    }
+
+    /* Check cache if mapped */
+    if (talweg_c_cache_lookup(ftl->cache, lba) >= 0) {
+        void *cached = NULL;
+        if (talweg_c_cache_pin(ftl->cache, lba, &cached) == TALWEG_OK) {
+            memcpy(out_buf, cached, ftl->page_size);
+            talweg_c_cache_unpin(ftl->cache, lba, false);
+            return TALWEG_OK;
+        }
     }
 
     if (ftl->flash_dev) {

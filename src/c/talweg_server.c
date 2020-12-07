@@ -202,6 +202,15 @@ int talweg_server_run(talweg_ftl_t *ftl, const char *socket_path) {
     printf("Talweg FTL Server listening on %s\n", socket_path);
 
     while (!g_stop) {
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(sfd, &fds);
+        struct timeval tv = { .tv_sec = 0, .tv_usec = 100000 };
+        int sel = select(sfd + 1, &fds, NULL, NULL, &tv);
+        if (sel <= 0) {
+            continue;
+        }
+
         int client_fd = accept(sfd, NULL, NULL);
         if (client_fd < 0) {
             if (g_stop) break;

@@ -49,11 +49,11 @@ static int cmd_serve_entry(int argc, char **argv) {
     geom.user_lba_count = 10000;
 
     talweg_flash_dev_t *dev = NULL;
-    int rc = talweg_media_open(&dev, media_path, &geom);
+    int rc = talweg_media_open(&dev, media_path, NULL);
     if (rc != TALWEG_OK) {
         printf("Media file '%s' not found. Creating new flash media...\n", media_path);
         talweg_media_create(media_path, &geom);
-        rc = talweg_media_open(&dev, media_path, &geom);
+        rc = talweg_media_open(&dev, media_path, NULL);
         if (rc != TALWEG_OK) {
             fprintf(stderr, "Fatal: Could not initialize flash media (status %d)\n", rc);
             return 1;
@@ -62,7 +62,7 @@ static int cmd_serve_entry(int argc, char **argv) {
 
     talweg_ftl_config_t cfg;
     memset(&cfg, 0, sizeof(cfg));
-    cfg.geom = geom;
+    cfg.geom = dev->geom;
     cfg.gc_policy = TALWEG_GC_COST_BENEFIT;
 
     talweg_ftl_t *ftl = NULL;

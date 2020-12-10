@@ -1,5 +1,6 @@
 #include "talweg_flash.h"
 #include "talweg_crc32.h"
+#include <stddef.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -162,7 +163,7 @@ int talweg_media_prog_page(talweg_flash_dev_t *dev, uint32_t ppn, const void *bu
     if (oob) {
         talweg_oob_t cooked = *oob;
         cooked.crc_data = talweg_crc32c_calc(buf, dev->geom.page_size);
-        cooked.crc_header = talweg_crc32c_calc(&cooked, sizeof(talweg_oob_t) - sizeof(uint32_t));
+        cooked.crc_header = talweg_crc32c_calc(&cooked, offsetof(talweg_oob_t, crc_header));
         memcpy(dst_oob, &cooked, sizeof(talweg_oob_t));
     } else {
         memset(dst_oob, 0, sizeof(talweg_oob_t));

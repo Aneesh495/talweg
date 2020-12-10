@@ -1,4 +1,6 @@
 #include "talweg_ftl.h"
+#include "talweg_crc32.h"
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,6 +16,9 @@ extern unsigned long long talweg_ats_ftl_get_user_writes(void *ftl);
 extern unsigned long long talweg_ats_ftl_get_flash_writes(void *ftl);
 extern unsigned long long talweg_ats_ftl_get_gc_cycles(void *ftl);
 extern uint32_t talweg_ats_ftl_get_waf_mille(void *ftl);
+
+extern uint32_t talweg_c_lba_map_update(void *p, uint32_t lba, uint32_t new_ppn);
+extern void talweg_c_alloc_rebuild(void *p, const uint32_t *block_prog_counts, uint32_t active_blk, uint32_t active_off);
 
 /* Internal fields from ATS context struct */
 typedef struct {
@@ -86,6 +91,58 @@ int talweg_ftl_attach_media(talweg_ftl_t *ftl, talweg_flash_dev_t *dev) {
     if (!ftl || !ftl->ats_ctx || !dev) return TALWEG_ERR_INVAL;
     talweg_ats_internal_t *ctx = (talweg_ats_internal_t *)ftl->ats_ctx;
     ctx->flash_dev = dev;
+
+    if (!dev->raw_media) return TALWEG_OK;
+
+    uint64_t *lba_seq = (uint64_t *)calloc(ctx->max_lba, sizeof(uint64_t));
+    uint32_t *prog_counts = (uint32_t *)calloc(dev->geom.total_blocks, sizeof(uint32_t));
+    if (!lba_seq || !prog_counts) {
+        if (lba_seq) free(lba_seq);
+        if (prog_counts) free(prog_counts);
+        return TALWEG_ERR_NOMEM;
+    }
+
+    uint32_t ppb = dev->geom.pages_per_block;
+    uint32_t total_blks = dev->geom.total_blocks;
+    uint32_t active_candidate = TALWEG_INVALID_BLOCK;
+    uint32_t active_offset = 0;
+    bool has_any_writes = false;
+
+    for (uint32_t blk = 0; blk < total_blks; blk++) {
+        uint32_t count = 0;
+        for (uint32_t p = 0; p < ppb; p++) {
+            uint32_t ppn = blk * ppb + p;
+            size_t offset = (size_t)ppn * dev->page_total_bytes;
+            const uint8_t *src_oob_raw = dev->raw_media + offset + dev->geom.page_size;
+            talweg_oob_t oob;
+            memcpy(&oob, src_oob_raw, sizeof(talweg_oob_t));
+
+            uint32_t expected_crc = talweg_crc32c_calc(&oob, offsetof(talweg_oob_t, crc_header));
+            if (oob.crc_header == expected_crc && oob.lba < ctx->max_lba) {
+                count++;
+                has_any_writes = true;
+                if (oob.seq >= lba_seq[oob.lba]) {
+                    lba_seq[oob.lba] = oob.seq;
+                    talweg_c_lba_map_update(ctx->map_tbl, oob.lba, ppn);
+                    if (oob.seq > ctx->flash_writes) {
+                        ctx->flash_writes = oob.seq;
+                    }
+                }
+            }
+        }
+        prog_counts[blk] = count;
+        if (count > 0 && count < ppb) {
+            active_candidate = blk;
+            active_offset = count;
+        }
+    }
+
+    if (has_any_writes) {
+        talweg_c_alloc_rebuild(ctx->allocator, prog_counts, active_candidate, active_offset);
+    }
+
+    free(lba_seq);
+    free(prog_counts);
     return TALWEG_OK;
 }
 

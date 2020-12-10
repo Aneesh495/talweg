@@ -162,4 +162,34 @@ void talweg_c_alloc_mark_bad(void *p, uint32_t blk) {
     if (!a || blk >= a->total_blocks) return;
     a->block_states[blk] = TALWEG_BLK_BAD;
 }
+
+void talweg_c_alloc_rebuild(void *p, const uint32_t *block_prog_counts, uint32_t active_blk, uint32_t active_off) {
+    talweg_ats_allocator_t *a = (talweg_ats_allocator_t *)p;
+    if (!a || !block_prog_counts) return;
+    a->free_top = 0;
+    a->free_count = 0;
+    for (uint32_t i = 0; i < a->total_blocks; i++) {
+        if (i == active_blk) {
+            a->block_states[i] = TALWEG_BLK_OPEN;
+        } else if (block_prog_counts[i] == 0) {
+            a->block_states[i] = TALWEG_BLK_FREE;
+            a->free_stack[a->free_top++] = i;
+            a->free_count++;
+        } else {
+            a->block_states[i] = TALWEG_BLK_CLOSED;
+        }
+    }
+    if (active_blk != TALWEG_INVALID_BLOCK) {
+        a->active_block = active_blk;
+        a->active_offset = active_off;
+    } else if (a->free_top > 0) {
+        a->active_block = a->free_stack[--a->free_top];
+        a->free_count--;
+        a->block_states[a->active_block] = TALWEG_BLK_OPEN;
+        a->active_offset = 0;
+    } else {
+        a->active_block = TALWEG_INVALID_BLOCK;
+        a->active_offset = 0;
+    }
+}
 %}

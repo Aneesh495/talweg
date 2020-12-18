@@ -13,6 +13,8 @@ int cmd_format(int argc, char **argv) {
     uint32_t dies = 2;
     uint32_t planes = 2;
 
+    uint32_t user_lba = 0;
+
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) {
             out_path = argv[++i];
@@ -20,6 +22,8 @@ int cmd_format(int argc, char **argv) {
             total_blocks = (uint32_t)atoi(argv[++i]);
         } else if (strcmp(argv[i], "--pages") == 0 && i + 1 < argc) {
             ppb = (uint32_t)atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--user-lba") == 0 && i + 1 < argc) {
+            user_lba = (uint32_t)atoi(argv[++i]);
         }
     }
 
@@ -35,7 +39,7 @@ int cmd_format(int argc, char **argv) {
     geom.page_size = ps;
     geom.oob_size = oob;
     geom.total_pages = total_blocks * ppb;
-    geom.user_lba_count = (total_blocks * 7 / 10) * ppb; /* 70% user capacity, 30% overprovisioning */
+    geom.user_lba_count = user_lba > 0 ? user_lba : ((total_blocks * 7 / 10) * ppb);
 
     printf("====================================================\n");
     printf(" Talweg Flash Media Formatter\n");

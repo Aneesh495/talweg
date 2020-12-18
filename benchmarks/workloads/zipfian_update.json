@@ -1,0 +1,12 @@
+{
+  "name": "Skewed Zipfian Hot-Cold Updates",
+  "description": "Heavy-tailed Zipfian distribution (theta = 0.99) modeling real-world hot-cold key-value workloads",
+  "distribution": "zipfian",
+  "theta": 0.99,
+  "read_ratio": 0.2,
+  "write_ratio": 0.8,
+  "block_size": 4096,
+  "total_operations": 5000,
+  "working_set_lbas": 2048,
+  "overprovisioning_sweep": [0.07, 0.14, 0.28, 0.50]
+}

@@ -1,0 +1,78 @@
+name: Talweg Continuous Integration
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-verify-macos:
+    name: Build & Verify (macOS)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install ATS2 Postiats & Dependencies
+        run: |
+          brew update
+          brew install ats2-postiats
+
+      - name: Check Typography Invariants
+        run: |
+          python3 tools/lint_no_em_dash.py
+
+      - name: Build Core Engine & Tool Suite
+        run: |
+          make clean
+          make all
+
+      - name: Run Full Test Suite
+        run: |
+          make test
+
+      - name: Run Benchmark Evaluation
+        run: |
+          python3 benchmarks/bench_waf_analysis.py --workload benchmarks/workloads/sequential_stream.json
+          python3 benchmarks/bench_latency_percentiles.py --ops 500
+
+  build-and-verify-linux:
+    name: Build & Verify (Ubuntu Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang libgmp-dev python3 git
+
+      - name: Install ATS2 Postiats from Source
+        run: |
+          git clone --depth 1 https://github.com/githwxi/ATS-Postiats.git $HOME/ATS2
+          cd $HOME/ATS2
+          ./configure --prefix=/usr/local
+          make CC=gcc -j$(nproc)
+          sudo make install
+          echo "PATSHOME=/usr/local/lib/ats2-postiats-0.4.2" >> $GITHUB_ENV
+          echo "/usr/local/bin" >> $GITHUB_PATH
+
+      - name: Check Typography Invariants
+        run: |
+          python3 tools/lint_no_em_dash.py
+
+      - name: Build Core Engine & Tool Suite
+        run: |
+          make clean
+          make all
+
+      - name: Run Full Test Suite
+        run: |
+          make test
+
+      - name: Run Benchmark Evaluation
+        run: |
+          python3 benchmarks/bench_waf_analysis.py --workload benchmarks/workloads/sequential_stream.json
+          python3 benchmarks/bench_latency_percentiles.py --ops 500

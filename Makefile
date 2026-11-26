@@ -7,7 +7,7 @@ PATSCC ?= patscc
 
 PATSHOME ?= /opt/homebrew/lib/ats2-postiats-0.4.2
 
-CFLAGS ?= -O2 -g -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-label -std=c17
+CFLAGS ?= -O2 -g -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-but-set-variable -Wno-unused-label -std=gnu17
 CFLAGS += -Iinclude -Isrc/c -I$(PATSHOME) -I$(PATSHOME)/ccomp/runtime
 
 PATSFLAGS ?= -IATS src/ats/SATS -IATS src/ats/DATS -IATS src/ats/HATS

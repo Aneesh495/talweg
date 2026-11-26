@@ -47,17 +47,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang libgmp-dev python3 git
-
-      - name: Install ATS2 Postiats from Source
-        run: |
-          git clone --depth 1 https://github.com/githwxi/ATS-Postiats.git $HOME/ATS2
-          cd $HOME/ATS2
-          ./configure --prefix=/usr/local
-          make CC=gcc -j$(nproc)
-          sudo make install
-          echo "PATSHOME=/usr/local/lib/ats2-postiats-0.4.2" >> $GITHUB_ENV
-          echo "/usr/local/bin" >> $GITHUB_PATH
+          sudo apt-get install -y build-essential clang libgmp-dev python3 git ats2-lang
 
       - name: Check Typography Invariants
         run: |

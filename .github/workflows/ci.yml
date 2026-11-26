@@ -48,6 +48,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential clang libgmp-dev python3 git ats2-lang
+          echo "PATSHOME=/usr/lib/ats2-postiats-0.4.2" >> $GITHUB_ENV
 
       - name: Check Typography Invariants
         run: |

@@ -2,6 +2,8 @@
 #include "talweg_ftl.h"
 #include "talweg_crc32.h"
 #include <sys/socket.h>
+#include <sys/select.h>
+#include <sys/time.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <unistd.h>
